@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OvoDeck - Advanced Web Media Player</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="app-header">
+            <div class="header-logo">
+                <!-- VLC inspired orange cone logo -->
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L9 9H15L12 2Z" fill="#FF6600" />
+                    <path d="M7.5 12.5H16.5L15 9H9L7.5 12.5Z" fill="#FF8833" />
+                    <path d="M6 16H18L16.5 12.5H7.5L6 16Z" fill="#FF6600" />
+                    <path d="M4.5 19.5H19.5L18 16H6L4.5 19.5Z" fill="#FF8833" />
+                    <path d="M2 22H22V19.5H2V22Z" fill="#E65C00" stroke="#FF6600" stroke-width="0.5" />
+                    <circle cx="12" cy="5" r="1.5" fill="#FFFFFF" />
+                </svg>
+                <span class="app-title">OvoDeck</span>
+            </div>
+            
+            <nav class="header-menu">
+                <div class="menu-item">
+                    <span>Media</span>
+                    <div class="dropdown-content">
+                        <label for="file-loader">Open File...</label>
+                        <a href="#" id="menu-open-url">Open Network Stream...</a>
+                        <a href="#" id="menu-clear-playlist">Clear Playlist</a>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    <span>Playback</span>
+                    <div class="dropdown-content">
+                        <a href="#" id="menu-play">Play/Pause</a>
+                        <a href="#" id="menu-stop">Stop</a>
+                        <a href="#" id="menu-prev">Previous</a>
+                        <a href="#" id="menu-next">Next</a>
+                        <a href="#" id="menu-speed-up">Speed Up (+)</a>
+                        <a href="#" id="menu-speed-down">Slow Down (-)</a>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    <span>Audio</span>
+                    <div class="dropdown-content">
+                        <a href="#" id="menu-volume-up">Volume Up (Up Arrow)</a>
+                        <a href="#" id="menu-volume-down">Volume Down (Down Arrow)</a>
+                        <a href="#" id="menu-mute">Mute/Unmute (M)</a>
+                        <hr>
+                        <a href="#" class="sidebar-tab-trigger" data-tab="equalizer">Equalizer Panel</a>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    <span>Video</span>
+                    <div class="dropdown-content">
+                        <a href="#" id="menu-fullscreen">Fullscreen (F)</a>
+                        <a href="#" class="sidebar-tab-trigger" data-tab="videofx">Aspect Ratio & Filters</a>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    <span>Help</span>
+                    <div class="dropdown-content">
+                        <a href="#" id="menu-shortcuts">Keyboard Shortcuts</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="header-status" id="header-status-text">Ready</div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <!-- Player Section -->
+            <section class="player-section" id="player-container">
+                <!-- Media Elements -->
+                <div class="media-wrapper">
+                    <!-- Standard video element, which handles both video and audio -->
+                    <video id="main-video" crossorigin="anonymous" playsinline></video>
+                    
+                    <!-- Canvas for Audio Visualizer (visible when playing audio files) -->
+                    <canvas id="visualizer-canvas"></canvas>
+                    
+                    <!-- Subtitle Rendering Layer -->
+                    <div id="subtitle-overlay" class="subtitle-overlay-hidden"></div>
+
+                    <!-- Centered Flash Overlays (Play, Pause, Mute, Volume, etc.) -->
+                    <div class="action-flash" id="action-flash">
+                        <span id="action-flash-icon"></span>
+                    </div>
+
+                    <!-- Drag & Drop Overlay -->
+                    <div class="drag-drop-overlay" id="drag-drop-overlay">
+                        <div class="drag-drop-box">
+                            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#FF6600" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            <h3>Drop Media Files Here</h3>
+                            <p>Supports MP4, WebM, MP3, WAV, VTT, SRT</p>
+                        </div>
+                    </div>
+
+                    <!-- Loader Spinner -->
+                    <div class="loader-overlay" id="loader-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Custom Overlay Control Bar -->
+                <div class="control-bar" id="control-bar">
+                    <!-- Progress Bar Slider Row -->
+                    <div class="progress-container">
+                        <div class="progress-bar-hover-time" id="progress-hover-time">00:00</div>
+                        <input type="range" class="progress-slider" id="progress-slider" min="0" max="100" step="0.01" value="0">
+                        <div class="progress-fill-bar" id="progress-fill-bar"></div>
+                        <div class="buffered-bar" id="buffered-bar"></div>
+                    </div>
+
+                    <div class="controls-row">
+                        <!-- Playback Controls -->
+                        <div class="control-group">
+                            <!-- Prev Button -->
+                            <button class="ctrl-btn" id="btn-prev" title="Previous Track">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><rect x="5" y="4" width="2" height="16"/></svg>
+                            </button>
+                            <!-- Play/Pause Button -->
+                            <button class="ctrl-btn main-play-btn" id="btn-play" title="Play/Pause (Space)">
+                                <svg id="play-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                <svg id="pause-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                            </button>
+                            <!-- Stop Button -->
+                            <button class="ctrl-btn" id="btn-stop" title="Stop (S)">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                            </button>
+                            <!-- Next Button -->
+                            <button class="ctrl-btn" id="btn-next" title="Next Track">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><rect x="17" y="4" width="2" height="16"/></svg>
+                            </button>
+
+                            <!-- Skippers -->
+                            <button class="ctrl-btn small-btn" id="btn-skip-back" title="Skip Back 10s (Left Arrow)">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                    <path d="M3 3v5h5"/>
+                                    <text x="7" y="16" font-size="10" font-weight="bold" fill="currentColor" stroke="none">10</text>
+                                </svg>
+                            </button>
+                            <button class="ctrl-btn small-btn" id="btn-skip-fwd" title="Skip Forward 10s (Right Arrow)">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                                    <path d="M21 3v5h-5"/>
+                                    <text x="9" y="16" font-size="10" font-weight="bold" fill="currentColor" stroke="none">10</text>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Time display -->
+                        <div class="control-group time-display">
+                            <span id="time-current">00:00</span>
+                            <span class="time-sep">/</span>
+                            <span id="time-duration">00:00</span>
+                        </div>
+
+                        <!-- Volume control -->
+                        <div class="control-group volume-container">
+                            <button class="ctrl-btn" id="btn-mute" title="Mute (M)">
+                                <svg id="vol-icon-high" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                                <svg id="vol-icon-muted" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display: none;"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                            </button>
+                            <input type="range" class="volume-slider" id="volume-slider" min="0" max="200" value="100">
+                            <span class="volume-percentage" id="volume-value">100%</span>
+                        </div>
+
+                        <!-- Spacer -->
+                        <div class="flex-spacer"></div>
+
+                        <!-- Right Control Panel Buttons -->
+                        <div class="control-group">
+                            <!-- Playback Speed -->
+                            <div class="speed-control">
+                                <button class="ctrl-btn speed-btn" id="btn-speed-menu">1.00x</button>
+                                <div class="speed-menu" id="speed-menu">
+                                    <div class="speed-opt" data-speed="0.25">0.25x (Slower)</div>
+                                    <div class="speed-opt" data-speed="0.5">0.50x</div>
+                                    <div class="speed-opt" data-speed="0.75">0.75x</div>
+                                    <div class="speed-opt active" data-speed="1.0">1.00x (Normal)</div>
+                                    <div class="speed-opt" data-speed="1.25">1.25x</div>
+                                    <div class="speed-opt" data-speed="1.5">1.50x</div>
+                                    <div class="speed-opt" data-speed="2.0">2.00x (Double)</div>
+                                    <div class="speed-opt" data-speed="3.0">3.00x</div>
+                                    <div class="speed-opt" data-speed="4.0">4.00x (Fast)</div>
+                                </div>
+                            </div>
+
+                            <!-- Toggle Subtitles -->
+                            <button class="ctrl-btn" id="btn-toggle-subtitles" title="Toggle Subtitles">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5V10h-2v4h2v-1H11v2H6V9h5v2zm7 0h-1.5V10h-2v4h2v-1H18v2h-5V9h5v2z"/></svg>
+                            </button>
+
+                            <!-- Visualizer Toggle (For music) -->
+                            <button class="ctrl-btn" id="btn-toggle-visualizer" title="Toggle Audio Visualizer">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="4" y="14" width="3" height="6" rx="1"/><rect x="10" y="8" width="3" height="12" rx="1"/><rect x="16" y="11" width="3" height="9" rx="1"/><rect x="4" y="4" width="15" height="2" rx="0.5"/></svg>
+                            </button>
+
+                            <!-- Sidebar Toggles -->
+                            <button class="ctrl-btn" id="btn-toggle-sidebar" title="Toggle Control Panel">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="14" y1="3" x2="14" y2="21" stroke="currentColor" stroke-width="2"/></svg>
+                            </button>
+
+                            <!-- Fullscreen -->
+                            <button class="ctrl-btn" id="btn-fullscreen" title="Fullscreen (F)">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sidebar Section (Collapsible Panels) -->
+            <aside class="sidebar-section active" id="sidebar-container">
+                <!-- Sidebar Tabs Navigation -->
+                <div class="sidebar-tabs">
+                    <button class="tab-btn active" data-tab="playlist" title="Playlist">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 10h11v2H3zm0-4h11v2H3zm0 8h7v2H3zm13-1v8l6-4z"/></svg>
+                        <span>Playlist</span>
+                    </button>
+                    <button class="tab-btn" data-tab="equalizer" title="Equalizer">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+                        <span>Equalizer</span>
+                    </button>
+                    <button class="tab-btn" data-tab="videofx" title="Video FX">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M15 17h6v-2h-6v2zm0-8h6V7h-6v2zm0 4h6v-2h-6v2zM3 17h10V7H3v10zm2-8h6v6H5V9z"/></svg>
+                        <span>Video FX</span>
+                    </button>
+                    <button class="tab-btn" data-tab="subtitles" title="Subtitles">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zM8 9h8v2H8V9zm6 4H8v-2h6v2z"/></svg>
+                        <span>Captions</span>
+                    </button>
+                </div>
+
+                <!-- Sidebar Tab Content Panels -->
+                <div class="sidebar-content">
+                    
+                    <!-- 1. Playlist Manager Panel -->
+                    <div class="tab-panel active" id="panel-playlist">
+                        <div class="panel-header">
+                            <h3>Media Playlist</h3>
+                            <div class="playlist-controls">
+                                <label for="file-loader" class="panel-btn" title="Add Local Files">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Add File
+                                </label>
+                                <button class="panel-btn" id="playlist-add-url" title="Add Streaming URL">Url</button>
+                                <button class="panel-btn danger-btn" id="playlist-clear" title="Clear All Tracks">Clear</button>
+                            </div>
+                            <!-- Hidden input for file selection -->
+                            <input type="file" id="file-loader" multiple accept="video/*,audio/*,.vtt,.srt" style="display: none;">
+                        </div>
+
+                        <!-- Playlist Items -->
+                        <div class="playlist-list-container">
+                            <ul class="playlist-items" id="playlist-items-list">
+                                <!-- Dynamically generated list elements will go here -->
+                            </ul>
+                            <div class="playlist-empty-state" id="playlist-empty">
+                                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4">
+                                    <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4" />
+                                    <polyline points="12 11 12 17 9 14" />
+                                    <polyline points="12 17 15 14" />
+                                </svg>
+                                <p>Playlist is empty</p>
+                                <span>Drag and drop media files directly into player window, or click Add File.</span>
+                            </div>
+                        </div>
+
+                        <!-- Playlist Settings (Loop/Shuffle) -->
+                        <div class="playlist-settings">
+                            <button class="setting-toggle-btn" id="playlist-toggle-shuffle" title="Shuffle Playlist">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                                <span>Shuffle</span>
+                            </button>
+                            <button class="setting-toggle-btn" id="playlist-toggle-repeat" title="Loop Mode">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+                                <span id="repeat-mode-label">Repeat: Off</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Equalizer Panel -->
+                    <div class="tab-panel" id="panel-equalizer">
+                        <div class="panel-header">
+                            <h3>10-Band Equalizer</h3>
+                            <div class="eq-enable-row">
+                                <label class="switch-container">
+                                    <input type="checkbox" id="eq-toggle">
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <span class="toggle-label">Enable Audio FX</span>
+                            </div>
+                        </div>
+
+                        <!-- EQ Presets -->
+                        <div class="eq-control-row">
+                            <label for="eq-preset-select">Preset:</label>
+                            <select id="eq-preset-select" class="custom-select" disabled>
+                                <option value="flat">Flat</option>
+                                <option value="classical">Classical</option>
+                                <option value="club">Club</option>
+                                <option value="dance">Dance</option>
+                                <option value="full-bass">Full Bass</option>
+                                <option value="full-treble">Full Treble</option>
+                                <option value="pop">Pop</option>
+                                <option value="rock">Rock</option>
+                                <option value="soft">Soft</option>
+                                <option value="techno">Techno</option>
+                            </select>
+                        </div>
+
+                        <!-- EQ Preamp Slider -->
+                        <div class="preamp-container">
+                            <div class="slider-label-row">
+                                <span>Pre-Amplifier Gain</span>
+                                <span id="eq-preamp-val">0 dB</span>
+                            </div>
+                            <input type="range" class="eq-slider preamp-slider" id="eq-preamp" min="-12" max="12" step="0.5" value="0" disabled>
+                        </div>
+
+                        <!-- 10 Sliders Grid -->
+                        <div class="eq-sliders-grid" id="eq-sliders-container">
+                            <!-- Dynamically generated sliders for 31, 62, 125, 250, 500, 1k, 2k, 4k, 8k, 16k Hz -->
+                        </div>
+                    </div>
+
+                    <!-- 3. Video FX Panel -->
+                    <div class="tab-panel" id="panel-videofx">
+                        <div class="panel-header">
+                            <h3>Aspect Ratio & Scaling</h3>
+                        </div>
+
+                        <div class="fx-control-group">
+                            <div class="eq-control-row">
+                                <label for="aspect-ratio-select">Aspect Ratio:</label>
+                                <select id="aspect-ratio-select" class="custom-select">
+                                    <option value="default">Default</option>
+                                    <option value="16:9">Widescreen 16:9</option>
+                                    <option value="4:3">Standard 4:3</option>
+                                    <option value="21:9">Cinematic 21:9</option>
+                                    <option value="fit">Fit Screen</option>
+                                    <option value="fill">Fill/Stretch</option>
+                                    <option value="zoom">Zoom Crop</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="panel-header" style="margin-top: 24px;">
+                            <h3>Color Adjustments</h3>
+                            <button class="panel-btn" id="fx-reset" style="font-size: 11px;">Reset Filters</button>
+                        </div>
+
+                        <div class="fx-slider-container">
+                            <!-- Brightness -->
+                            <div class="slider-label-row">
+                                <span>Brightness</span>
+                                <span id="fx-brightness-val">100%</span>
+                            </div>
+                            <input type="range" class="fx-slider" id="fx-brightness" min="0" max="200" value="100">
+                        </div>
+
+                        <div class="fx-slider-container">
+                            <!-- Contrast -->
+                            <div class="slider-label-row">
+                                <span>Contrast</span>
+                                <span id="fx-contrast-val">100%</span>
+                            </div>
+                            <input type="range" class="fx-slider" id="fx-contrast" min="0" max="200" value="100">
+                        </div>
+
+                        <div class="fx-slider-container">
+                            <!-- Saturation -->
+                            <div class="slider-label-row">
+                                <span>Saturation</span>
+                                <span id="fx-saturation-val">100%</span>
+                            </div>
+                            <input type="range" class="fx-slider" id="fx-saturation" min="0" max="200" value="100">
+                        </div>
+
+                        <div class="fx-slider-container">
+                            <!-- Hue Rotate -->
+                            <div class="slider-label-row">
+                                <span>Hue Shift</span>
+                                <span id="fx-hue-val">0°</span>
+                            </div>
+                            <input type="range" class="fx-slider" id="fx-hue" min="0" max="360" value="0">
+                        </div>
+
+                        <div class="fx-slider-container">
+                            <!-- Blur -->
+                            <div class="slider-label-row">
+                                <span>Blur</span>
+                                <span id="fx-blur-val">0px</span>
+                            </div>
+                            <input type="range" class="fx-slider" id="fx-blur" min="0" max="20" value="0">
+                        </div>
+
+                        <div class="fx-slider-container">
+                            <!-- Invert -->
+                            <div class="slider-label-row">
+                                <span>Invert Colors</span>
+                                <span id="fx-invert-val">0%</span>
+                            </div>
+                            <input type="range" class="fx-slider" id="fx-invert" min="0" max="100" value="0">
+                        </div>
+                    </div>
+
+                    <!-- 4. Subtitles Sync Panel -->
+                    <div class="tab-panel" id="panel-subtitles">
+                        <div class="panel-header">
+                            <h3>Subtitle Synchronization</h3>
+                        </div>
+
+                        <!-- Load external file -->
+                        <div class="caption-load-box">
+                            <p>Import external captions file (.srt, .vtt):</p>
+                            <label for="sub-file-loader" class="panel-btn block-btn">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                Choose Subtitle File
+                            </label>
+                            <input type="file" id="sub-file-loader" accept=".vtt,.srt" style="display: none;">
+                            <span id="loaded-sub-name" class="loaded-sub-label">No subtitle file loaded</span>
+                        </div>
+
+                        <!-- Offset synchronization slider -->
+                        <div class="fx-slider-container" style="margin-top: 20px;">
+                            <div class="slider-label-row">
+                                <span>Subtitle Delay Offset</span>
+                                <span id="sub-delay-val">0.0s</span>
+                            </div>
+                            <input type="range" class="fx-slider" id="sub-delay" min="-10" max="10" step="0.1" value="0">
+                            <div class="sync-hints">
+                                <span>Negative: Appears Earlier</span>
+                                <span>Positive: Appears Later</span>
+                            </div>
+                        </div>
+
+                        <hr style="border-color: rgba(255,255,255,0.08); margin: 24px 0;">
+
+                        <!-- Subtitle Styling -->
+                        <div class="panel-header">
+                            <h3>Caption Aesthetics</h3>
+                        </div>
+
+                        <div class="eq-control-row">
+                            <label for="sub-size-select">Font Size:</label>
+                            <select id="sub-size-select" class="custom-select">
+                                <option value="small">Small</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="large">Large</option>
+                                <option value="xlarge">Extra Large</option>
+                            </select>
+                        </div>
+
+                        <div class="eq-control-row" style="margin-top: 12px;">
+                            <label for="sub-color-select">Font Color:</label>
+                            <select id="sub-color-select" class="custom-select">
+                                <option value="white" selected>White</option>
+                                <option value="yellow">Yellow</option>
+                                <option value="cyan">Cyan</option>
+                                <option value="green">Light Green</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- 1. Shortcuts Help Modal -->
+    <div class="modal-backdrop" id="modal-shortcuts">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Keyboard Shortcuts</h2>
+                <button class="modal-close" id="btn-close-shortcuts">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-grid">
+                    <div class="shortcut-item"><kbd>Space</kbd> <span>Play / Pause</span></div>
+                    <div class="shortcut-item"><kbd>S</kbd> <span>Stop playback</span></div>
+                    <div class="shortcut-item"><kbd>F</kbd> <span>Toggle Fullscreen</span></div>
+                    <div class="shortcut-item"><kbd>M</kbd> <span>Mute / Unmute audio</span></div>
+                    <div class="shortcut-item"><kbd>&rarr;</kbd> <span>Skip forward 10 seconds</span></div>
+                    <div class="shortcut-item"><kbd>&larr;</kbd> <span>Skip backward 10 seconds</span></div>
+                    <div class="shortcut-item"><kbd>Ctrl + &rarr;</kbd> <span>Skip forward 1 minute</span></div>
+                    <div class="shortcut-item"><kbd>Ctrl + &larr;</kbd> <span>Skip backward 1 minute</span></div>
+                    <div class="shortcut-item"><kbd>&uarr;</kbd> <span>Increase volume (Up to 200%!)</span></div>
+                    <div class="shortcut-item"><kbd>&darr;</kbd> <span>Decrease volume</span></div>
+                    <div class="shortcut-item"><kbd>+</kbd> <span>Speed up playback</span></div>
+                    <div class="shortcut-item"><kbd>-</kbd> <span>Slow down playback</span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="panel-btn" id="btn-ok-shortcuts">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Network Stream URL Modal -->
+    <div class="modal-backdrop" id="modal-network">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Open Network Stream</h2>
+                <button class="modal-close" id="btn-close-network">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Enter a public URL for a media file or stream (MP4, MP3, WebM, HLS, etc.):</p>
+                <input type="url" id="network-url-input" class="modal-input" placeholder="https://example.com/video.mp4" required>
+                
+                <div class="stream-presets">
+                    <h4>Test Stream Presets:</h4>
+                    <button class="preset-url-btn" data-url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">Big Buck Bunny (Video MP4)</button>
+                    <button class="preset-url-btn" data-url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4">Elephants Dream (Video MP4)</button>
+                    <button class="preset-url-btn" data-url="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3">SoundHelix Audio Song 1 (Audio MP3)</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="panel-btn secondary-btn" id="btn-cancel-network">Cancel</button>
+                <button class="panel-btn" id="btn-submit-network">Open Stream</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="audio-engine.js"></script>
+    <script src="player.js"></script>
+    <script src="visualizer.js"></script>
+    <script src="subtitles.js"></script>
+    <script src="ui.js"></script>
+</body>
+</html>
