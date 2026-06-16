@@ -11,3 +11,7 @@ Thumbs.db
 *.sln
 *.sw?
 .gemini/
+node_modules/
+dist/
+package-lock.json
+

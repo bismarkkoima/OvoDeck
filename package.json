@@ -1,0 +1,23 @@
+{
+  "name": "ovodeck-media-player",
+  "version": "1.0.0",
+  "description": "VLC-like advanced web media player wrapped in Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "media",
+    "player",
+    "vlc",
+    "electron",
+    "audio",
+    "video"
+  ],
+  "author": "Antigravity AI",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}
